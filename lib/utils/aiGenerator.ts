@@ -30,7 +30,7 @@ export function generateImpactSummary(activities: { role: string; org: string; t
   const categories = [...new Set(activities.map(a => a.category))];
   const topActivity = activities.sort((a, b) => b.totalHours - a.totalHours)[0];
 
-  return `Over ${totalHours}+ hours of volunteer service across ${activities.length} organizations, ${topActivity?.name || 'your work'} demonstrates a deep commitment to ${categories.slice(0, 2).join(' and ')}. Your diverse portfolio of experiences positions you as a well-rounded, impact-driven applicant ready for higher education and beyond.`;
+  return `Over ${totalHours}+ hours of volunteer service across ${activities.length} organizations, ${topActivity?.role || 'your work'} demonstrates a deep commitment to ${categories.slice(0, 2).join(' and ')}. Your diverse portfolio of experiences positions you as a well-rounded, impact-driven applicant ready for higher education and beyond.`;
 }
 
 export function generateActivityDescription(org: string, role: string, category: string): string {
