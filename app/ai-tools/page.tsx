@@ -70,11 +70,11 @@ export default function AIToolsPage() {
                 <Sparkles size={14} color="#818cf8" />
                 <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 600 }}>AI-Powered Writing Tools</span>
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 8 }}>
-                Generate Your <span className="gradient-text">College Content</span>
+              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>
+                Impact Portfolio Builder
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6 }}>
-                Select an activity and a tool to instantly generate polished college application content. Based on your {activities.length} activities and {totalHours}+ hours.
+              <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
+                Translate your service experiences into professional summaries and milestone stories. Based on your {activities.length} activities and {totalHours}+ hours.
               </p>
             </div>
 

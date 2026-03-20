@@ -67,13 +67,14 @@ export default function OpportunitiesPage() {
         padding: '40px 24px',
       }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.02em' }}>
-            Discover <span className="gradient-text">Opportunities</span>
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: 16 }}>
-            {opportunities.length} verified listings across {categories.length} categories
-          </p>
-
+          <div style={{ marginBottom: 32 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>
+              Explore Opportunities
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
+              Find the perfect project that matches your passion and schedule.
+            </p>
+          </div>
           {/* Search */}
           <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
             <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />

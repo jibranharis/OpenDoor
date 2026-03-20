@@ -23,11 +23,11 @@ export default function AwardsPage() {
               }}>
                 <Award size={32} color="var(--accent)" />
               </div>
-              <h1 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 12 }}>
-                Milestones & <span className="gradient-text">Awards</span>
+              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 6 }}>
+                Service Milestones
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 16, maxWidth: 500, margin: '0 auto' }}>
-                Track your journey from a local volunteer to a community leader. Every hour brings you closer to your next achievement.
+              <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
+                Celebrating your dedication and impact in the community.
               </p>
             </div>
 
@@ -38,13 +38,14 @@ export default function AwardsPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: 'var(--accent-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                    Current Standing
-                  </div>
-                  <div style={{ fontSize: 48, fontWeight: 900, color: 'white', display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                    {totalHours} <span style={{ fontSize: 20, color: 'var(--text-muted)', fontWeight: 600 }}>Total Hours</span>
-                  </div>
-                  <p style={{ color: 'var(--text-secondary)', marginTop: 12, fontSize: 15 }}>
+                  <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+                    Current Community Standing
+                  </h2>
+                  <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{totalHours} hrs</div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
+                    Of verified community contribution
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
                     You've unlocked {badges.filter(b => totalHours >= b.requirement).length} out of {badges.length} service badges.
                   </p>
                 </div>

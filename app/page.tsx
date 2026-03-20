@@ -82,13 +82,11 @@ export default function LandingPage() {
           <span style={{ fontSize: 13, color: '#818cf8', fontWeight: 600 }}>The College Prep Activity Platform</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(42px, 7vw, 72px)', fontWeight: 900, lineHeight: 1.1, marginBottom: 24, letterSpacing: '-0.03em' }}>
-          Build a College-Ready{' '}
-          <span className="gradient-text">Activity Profile</span>
+        <h1 style={{ fontSize: 62, fontWeight: 900, marginBottom: 24, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
+          Unlock Your <span className="gradient-text">Next Opportunity.</span>
         </h1>
-
-        <p style={{ fontSize: 18, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
-          Discover verified volunteering &amp; internship opportunities, track your hours, and generate AI-powered resume bullets — all in one platform designed for college prep.
+        <p style={{ fontSize: 20, color: 'var(--text-secondary)', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}>
+          The premium gateway for students to discover meaningful service, track their community impact, and build a portfolio that matters.
         </p>
 
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
