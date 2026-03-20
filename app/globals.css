@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -31,7 +31,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', 'Inter', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
@@ -45,18 +45,62 @@ body {
 
 /* Glass morphism */
 .glass {
-  background: rgba(17, 24, 39, 0.7);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .glass-strong {
-  background: rgba(13, 21, 38, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
+  background: rgba(13, 21, 38, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
+
+/* Mesh Gradient */
+.mesh-gradient {
+  background-color: #080e1a;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 50%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 50%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 50%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 100%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(225,39%,30%,1) 0, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-move 15s ease infinite;
+}
+
+@keyframes mesh-move {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* Bento Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(150px, auto);
+  gap: 20px;
+}
+
+.bento-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.bento-1 { grid-column: span 2; grid-row: span 2; }
+.bento-2 { grid-column: span 2; grid-row: span 1; }
+.bento-3 { grid-column: span 1; grid-row: span 1; }
+.bento-4 { grid-column: span 1; grid-row: span 1; }
 
 /* Gradient text */
 .gradient-text {
