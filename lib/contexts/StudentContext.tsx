@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export interface Activity {
   id: string;
@@ -73,45 +74,131 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.role !== 'student') {
+    const fetchData = async () => {
+      if (!user || user.role !== 'student') {
         setIsInitialized(false);
         return;
-    }
-    const key = `opendoor_student_${user.email}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        if (data.profile) setProfile(data.profile);
-        if (data.activities) setActivities(data.activities);
-        if (data.savedOpportunities) setSavedOpportunities(data.savedOpportunities);
-        if (data.applications) setApplications(data.applications);
-        if (data.notifications) setNotifications(data.notifications);
-      } catch (e) {}
-    }
-    setIsInitialized(true);
+      }
+
+      // 1. Fetch from Supabase
+      const { data: dbProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+        
+      if (dbProfile) {
+        setProfile({
+          name: dbProfile.name || '',
+          grade: '11', // Default or could be in DB
+          school: dbProfile.school || '',
+          interests: [],
+          bio: dbProfile.bio || '',
+          resumeUploaded: false
+        });
+      }
+
+      const { data: dbActivities } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('user_email', user.email);
+        
+      if (dbActivities) {
+        setActivities(dbActivities.map(a => ({
+          id: a.id,
+          orgName: a.org_name,
+          role: a.role,
+          category: a.category,
+          hoursPerWeek: Number(a.hours_per_week),
+          totalHours: Number(a.total_hours),
+          description: a.description || '',
+          startDate: a.date || '',
+          endDate: '',
+          isOngoing: false
+        })));
+      }
+
+      // 2. Legacy Local Fallback
+      const key = `opendoor_student_${user.email}`;
+      const stored = localStorage.getItem(key);
+      if (stored && !dbProfile && !dbActivities) {
+        try {
+          const data = JSON.parse(stored);
+          if (data.profile) setProfile(data.profile);
+          if (data.activities) setActivities(data.activities);
+          if (data.savedOpportunities) setSavedOpportunities(data.savedOpportunities);
+          if (data.applications) setApplications(data.applications);
+        } catch (e) {}
+      }
+      
+      setIsInitialized(true);
+    };
+
+    fetchData();
   }, [user?.email, user?.role]);
 
   useEffect(() => {
     if (!isInitialized || !user || user.role !== 'student') return;
+    
+    // Sync to LocalStorage for safety/offline
     const key = `opendoor_student_${user.email}`;
     localStorage.setItem(key, JSON.stringify({
       profile, activities, savedOpportunities, applications, notifications
     }));
+
+    // Sync to Supabase
+    const syncToCloud = async () => {
+      // Update profile school/bio in 'profiles'
+      await supabase.from('profiles').update({
+        school: profile.school,
+        // grade: profile.grade, -- add if table updated
+      }).eq('email', user.email);
+    };
+    
+    syncToCloud();
   }, [profile, activities, savedOpportunities, applications, notifications, isInitialized, user?.email, user?.role]);
 
   const updateProfile = (p: Partial<StudentProfile>) => setProfile(prev => ({ ...prev, ...p }));
 
-  const addActivity = (a: Omit<Activity, 'id'>) => {
-    setActivities(prev => [{ ...a, id: Date.now().toString() }, ...prev]);
+  const addActivity = async (a: Omit<Activity, 'id'>) => {
+    const newId = crypto.randomUUID();
+    const newAct = { ...a, id: newId };
+    setActivities(prev => [newAct, ...prev]);
+
+    if (user?.email) {
+      await supabase.from('activities').insert({
+        id: newId,
+        user_email: user.email,
+        org_name: a.orgName,
+        role: a.role,
+        category: a.category,
+        hours_per_week: a.hoursPerWeek,
+        total_hours: a.totalHours,
+        description: a.description,
+        date: a.startDate
+      });
+    }
   };
 
-  const editActivity = (id: string, a: Partial<Activity>) => {
+  const editActivity = async (id: string, a: Partial<Activity>) => {
     setActivities(prev => prev.map(act => act.id === id ? { ...act, ...a } : act));
+    
+    if (user?.email) {
+      await supabase.from('activities').update({
+        org_name: a.orgName,
+        role: a.role,
+        category: a.category,
+        hours_per_week: a.hoursPerWeek,
+        total_hours: a.totalHours,
+        description: a.description,
+        date: a.startDate
+      }).eq('id', id);
+    }
   };
 
-  const deleteActivity = (id: string) => {
+  const deleteActivity = async (id: string) => {
     setActivities(prev => prev.filter(a => a.id !== id));
+    await supabase.from('activities').delete().eq('id', id);
   };
 
   const totalHours = activities.reduce((sum, a) => sum + a.totalHours, 0);

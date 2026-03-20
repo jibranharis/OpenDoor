@@ -7,6 +7,7 @@ import type { Opportunity } from '@/lib/data/opportunities';
 import { useOpportunities } from '@/lib/contexts/OpportunitiesContext';
 import type { AuthUser } from '@/lib/contexts/AuthContext';
 import { Shield, Users, Compass, CheckCircle, Trash2, Check, X, BarChart2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminPage() {
   const { opportunities, updateOpportunity, deleteOpportunity } = useOpportunities();
@@ -18,25 +19,72 @@ export default function AdminPage() {
   const [studentDetails, setStudentDetails] = useState<any>(null);
 
   useEffect(() => {
-    const usersStr = localStorage.getItem('opendoor_users');
-    if (usersStr) {
-      setUsers(Object.values(JSON.parse(usersStr)));
-    }
-  }, []);
+    const fetchUsers = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+        
+      if (data) {
+        setUsers(data.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role as any,
+          avatar: u.avatar,
+          orgName: u.org_name
+        })));
+      } else {
+        // Fallback to local
+        const usersStr = localStorage.getItem('opendoor_users');
+        if (usersStr) {
+          setUsers(Object.values(JSON.parse(usersStr)));
+        }
+      }
+    };
+    
+    fetchUsers();
+  }, [activeTab]);
 
-  const handleApprove = (o: Opportunity) => {
+  const handleApprove = async (o: Opportunity) => {
     updateOpportunity(o.id, { verified: true });
+    // Sync to Supabase
+    await supabase.from('opportunities_status').upsert({ id: o.id, verified: true });
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     deleteOpportunity(id);
+    // Sync to Supabase
+    await supabase.from('opportunities_status').delete().eq('id', id);
   };
 
-  const handleUserClick = (u: AuthUser) => {
+  const handleUserClick = async (u: AuthUser) => {
     setSelectedUser(u);
     if (u.role === 'student') {
-      const detailsStr = localStorage.getItem(`opendoor_student_${u.email}`);
-      setStudentDetails(detailsStr ? JSON.parse(detailsStr) : null);
+      // Fetch details from Supabase
+      const { data: profile } = await supabase.from('profiles').select('*').eq('email', u.email).single();
+      const { data: activities } = await supabase.from('activities').select('*').eq('user_email', u.email);
+      
+      if (profile || activities) {
+        setStudentDetails({
+          profile: {
+            school: profile?.school || 'Not specified',
+            grade: profile?.grade || 'Not specified',
+            interests: []
+          },
+          activities: activities?.map(a => ({
+            id: a.id,
+            role: a.role,
+            orgName: a.org_name,
+            category: a.category,
+            hoursPerWeek: a.hours_per_week,
+            totalHours: a.total_hours
+          })) || []
+        });
+      } else {
+        // Fallback to local
+        const detailsStr = localStorage.getItem(`opendoor_student_${u.email}`);
+        setStudentDetails(detailsStr ? JSON.parse(detailsStr) : null);
+      }
     } else {
       setStudentDetails(null);
     }

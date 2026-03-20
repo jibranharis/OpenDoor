@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type UserRole = 'student' | 'org' | 'admin' | null;
 
@@ -36,25 +37,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setUser = (newUser: AuthUser | null) => {
+  const setUser = async (newUser: AuthUser | null) => {
     setUserState(newUser);
     if (newUser) {
       localStorage.setItem('opendoor_user', JSON.stringify(newUser));
-      const usersStr = localStorage.getItem('opendoor_users');
-      const users = usersStr ? JSON.parse(usersStr) : {};
       
+      // Sync to Supabase Profiles table if not admin
       if (newUser.role !== 'admin') {
-        if (users[newUser.email]) {
-          users[newUser.email] = { ...users[newUser.email], ...newUser };
-        }
-        localStorage.setItem('opendoor_users', JSON.stringify(users));
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: newUser.id.includes('-') ? newUser.id : undefined, // Check if it's already a UUID
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            avatar: newUser.avatar,
+            org_name: newUser.orgName
+          }, { onConflict: 'email' });
+          
+        if (error) console.error('Error syncing profile to cloud:', error);
       }
     } else {
       localStorage.removeItem('opendoor_user');
     }
   };
 
-  const login = (email: string, password: string, role: UserRole) => {
+  const login = async (email: string, password: string, role: UserRole) => {
     if (role === 'admin') {
       if (email !== 'admin@opendoor.com' || password !== 'disney6000') {
         throw new Error('Invalid Admin credentials. Access denied.');
@@ -63,46 +71,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const usersStr = localStorage.getItem('opendoor_users');
-    const users = usersStr ? JSON.parse(usersStr) : {};
-    const dbUser = users[email];
-    
+    // Attempt Supabase login first
+    const { data: dbUser, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .single();
+
     if (dbUser) {
-      if (dbUser.password !== password) {
+      if (dbUser.password && dbUser.password !== password) {
         throw new Error('Incorrect password. Please try again.');
       }
-      if (dbUser.role !== role) {
-        throw new Error(`This email is registered as a ${dbUser.role}, not a ${role}.`);
+      setUser({
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role as UserRole,
+        avatar: dbUser.avatar,
+        orgName: dbUser.org_name
+      });
+      return;
+    }
+
+    // Fallback/Legacy Local login (to help migration)
+    const usersStr = localStorage.getItem('opendoor_users');
+    const users = usersStr ? JSON.parse(usersStr) : {};
+    const localUser = users[email];
+    
+    if (localUser) {
+      if (localUser.password !== password) {
+        throw new Error('Incorrect password. Please try again.');
       }
-      const { password: _, ...userToSet } = dbUser;
+      const { password: _, ...userToSet } = localUser;
       setUser(userToSet as AuthUser);
     } else {
       throw new Error('No account found with this email. Please sign up first.');
     }
   };
 
-  const register = (name: string, email: string, password: string, role: UserRole, orgName?: string) => {
-    const usersStr = localStorage.getItem('opendoor_users');
-    const users = usersStr ? JSON.parse(usersStr) : {};
+  const register = async (name: string, email: string, password: string, role: UserRole, orgName?: string) => {
+    // Check if user exists in Supabase
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('email', email)
+      .single();
 
-    if (users[email]) {
-      throw new Error('An account with this email already exists. Please log in.');
+    if (existing) {
+      throw new Error('An account with this email already exists in the cloud. Please log in.');
     }
 
+    const userId = crypto.randomUUID();
     const newUser = {
-      id: Date.now().toString(),
+      id: userId,
       name: name || 'User',
       email,
-      password,
       role,
+      avatar: undefined,
       orgName: role === 'org' ? orgName : undefined,
     };
-    
-    users[email] = newUser;
+
+    // Insert into Supabase
+    const { error } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        email,
+        name: newUser.name,
+        password, // For simple demo persistence
+        role,
+        org_name: newUser.orgName
+      });
+
+    if (error) {
+      console.error('Migration Error:', error);
+      throw new Error('Failed to create account in the cloud: ' + error.message);
+    }
+
+    // Legacy sync for local safety
+    const usersStr = localStorage.getItem('opendoor_users');
+    const users = usersStr ? JSON.parse(usersStr) : {};
+    users[email] = { ...newUser, password };
     localStorage.setItem('opendoor_users', JSON.stringify(users));
 
-    const { password: _, ...userToSet } = newUser;
-    setUser(userToSet as AuthUser);
+    setUser(newUser as AuthUser);
   };
 
   const logout = () => setUser(null);
