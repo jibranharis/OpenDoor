@@ -86,7 +86,7 @@ export default function LandingPage() {
           Unlock Your <span className="gradient-text">Next Opportunity.</span>
         </h1>
         <p style={{ fontSize: 20, color: 'var(--text-secondary)', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.6 }}>
-          The premium gateway for students to discover meaningful service, track their community impact, and build a portfolio that matters.
+          The best place for students to discover meaningful volunteer opportunities, track their community impact, and build a portfolio that matters.
         </p>
 
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
