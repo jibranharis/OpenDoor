@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, hasSupabase } from '@/lib/supabase';
 
 export interface Activity {
   id: string;
@@ -81,41 +81,52 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       }
 
       // 1. Fetch from Supabase
-      const { data: dbProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', user.email)
-        .single();
-        
-      if (dbProfile) {
-        setProfile({
-          name: dbProfile.name || '',
-          grade: '11', // Default or could be in DB
-          school: dbProfile.school || '',
-          interests: [],
-          bio: dbProfile.bio || '',
-          resumeUploaded: false
-        });
-      }
+      let dbProfile = null;
+      let dbActivities = null;
 
-      const { data: dbActivities } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('user_email', user.email);
-        
-      if (dbActivities) {
-        setActivities(dbActivities.map(a => ({
-          id: a.id,
-          orgName: a.org_name,
-          role: a.role,
-          category: a.category,
-          hoursPerWeek: Number(a.hours_per_week),
-          totalHours: Number(a.total_hours),
-          description: a.description || '',
-          startDate: a.date || '',
-          endDate: '',
-          isOngoing: false
-        })));
+      if (hasSupabase) {
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', user.email)
+            .single();
+
+          if (profileData && !profileError) {
+            dbProfile = profileData;
+            setProfile({
+              name: dbProfile.name || '',
+              grade: '11', 
+              school: dbProfile.school || '',
+              interests: [],
+              bio: dbProfile.bio || '',
+              resumeUploaded: false
+            });
+          }
+
+          const { data: activitiesData, error: activitiesError } = await supabase
+            .from('activities')
+            .select('*')
+            .eq('user_email', user.email);
+
+          if (activitiesData && !activitiesError) {
+            dbActivities = activitiesData;
+            setActivities(dbActivities.map(a => ({
+              id: a.id,
+              orgName: a.org_name,
+              role: a.role,
+              category: a.category,
+              hoursPerWeek: Number(a.hours_per_week),
+              totalHours: Number(a.total_hours),
+              description: a.description || '',
+              startDate: a.date || '',
+              endDate: '',
+              isOngoing: false
+            })));
+          }
+        } catch (err) {
+          // Silently catch errors so the app continues gracefully with local data
+        }
       }
 
       // 2. Legacy Local Fallback
@@ -147,15 +158,17 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }));
 
     // Sync to Supabase
-    const syncToCloud = async () => {
-      // Update profile school/bio in 'profiles'
-      await supabase.from('profiles').update({
-        school: profile.school,
-        // grade: profile.grade, -- add if table updated
-      }).eq('email', user.email);
-    };
-    
-    syncToCloud();
+    if (hasSupabase) {
+      const syncToCloud = async () => {
+        // Update profile school/bio in 'profiles'
+        await supabase.from('profiles').update({
+          school: profile.school,
+          // grade: profile.grade, -- add if table updated
+        }).eq('email', user.email);
+      };
+      
+      syncToCloud();
+    }
   }, [profile, activities, savedOpportunities, applications, notifications, isInitialized, user?.email, user?.role]);
 
   const updateProfile = (p: Partial<StudentProfile>) => setProfile(prev => ({ ...prev, ...p }));
@@ -165,7 +178,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     const newAct = { ...a, id: newId };
     setActivities(prev => [newAct, ...prev]);
 
-    if (user?.email) {
+    if (user?.email && hasSupabase) {
       await supabase.from('activities').insert({
         id: newId,
         user_email: user.email,
@@ -183,7 +196,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const editActivity = async (id: string, a: Partial<Activity>) => {
     setActivities(prev => prev.map(act => act.id === id ? { ...act, ...a } : act));
     
-    if (user?.email) {
+    if (user?.email && hasSupabase) {
       await supabase.from('activities').update({
         org_name: a.orgName,
         role: a.role,
@@ -198,7 +211,9 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
   const deleteActivity = async (id: string) => {
     setActivities(prev => prev.filter(a => a.id !== id));
-    await supabase.from('activities').delete().eq('id', id);
+    if (hasSupabase) {
+      await supabase.from('activities').delete().eq('id', id);
+    }
   };
 
   const totalHours = activities.reduce((sum, a) => sum + a.totalHours, 0);

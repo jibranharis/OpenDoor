@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, hasSupabase } from '@/lib/supabase';
 
 export type UserRole = 'student' | 'org' | 'admin' | null;
 
@@ -16,8 +16,8 @@ export interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (email: string, password: string, role: UserRole) => void;
-  register: (name: string, email: string, password: string, role: UserRole, orgName?: string) => void;
+  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, orgName?: string) => Promise<void>;
   logout: () => void;
   updateUser: (updates: Partial<AuthUser>) => void;
   isAuthenticated: boolean;
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('opendoor_user', JSON.stringify(newUser));
       
       // Sync to Supabase Profiles table if not admin
-      if (newUser.role !== 'admin') {
+      if (newUser.role !== 'admin' && hasSupabase) {
         const { error } = await supabase
           .from('profiles')
           .upsert({
@@ -72,25 +72,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Attempt Supabase login first
-    const { data: dbUser, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', email)
-      .single();
+    if (hasSupabase) {
+      try {
+        const { data: dbUser, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .single();
 
-    if (dbUser) {
-      if (dbUser.password && dbUser.password !== password) {
-        throw new Error('Incorrect password. Please try again.');
+        if (dbUser && !error) {
+          if (dbUser.password && dbUser.password !== password) {
+            throw new Error('Incorrect password. Please try again.');
+          }
+          setUser({
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role as UserRole,
+            avatar: dbUser.avatar,
+            orgName: dbUser.org_name
+          });
+          return;
+        }
+      } catch (e) {
+        // Silently fall back to local if cloud fails
       }
-      setUser({
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        role: dbUser.role as UserRole,
-        avatar: dbUser.avatar,
-        orgName: dbUser.org_name
-      });
-      return;
     }
 
     // Fallback/Legacy Local login (to help migration)
@@ -111,14 +117,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (name: string, email: string, password: string, role: UserRole, orgName?: string) => {
     // Check if user exists in Supabase
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('email', email)
-      .single();
+    if (hasSupabase) {
+      try {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', email)
+          .single();
 
-    if (existing) {
-      throw new Error('An account with this email already exists in the cloud. Please log in.');
+        if (existing) {
+          throw new Error('An account with this email already exists in the cloud. Please log in.');
+        }
+      } catch (e: any) {
+        if (e.message && e.message.includes('already exists')) throw e;
+      }
     }
 
     const userId = crypto.randomUUID();
@@ -132,20 +144,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Insert into Supabase
-    const { error } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        email,
-        name: newUser.name,
-        password, // For simple demo persistence
-        role,
-        org_name: newUser.orgName
-      });
+    if (hasSupabase) {
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email,
+          name: newUser.name,
+          password, // For simple demo persistence
+          role,
+          org_name: newUser.orgName
+        });
 
-    if (error) {
-      console.error('Migration Error:', error);
-      throw new Error('Failed to create account in the cloud: ' + error.message);
+      if (error) {
+        console.error('Migration Error:', error);
+        throw new Error('Failed to create account in the cloud: ' + error.message);
+      }
     }
 
     // Legacy sync for local safety

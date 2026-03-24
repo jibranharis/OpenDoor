@@ -16,11 +16,13 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError('');
-      login(email, password, role);
+      await login(email, password, role);
+      
+      // Delay slightly to ensure state propagation before navigation
       if (role === 'org') router.push('/org/dashboard');
       else if (role === 'admin') router.push('/admin');
       else router.push('/dashboard');

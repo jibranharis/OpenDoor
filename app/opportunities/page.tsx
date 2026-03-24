@@ -284,7 +284,7 @@ function OppCard({ opp, saved, onToggleSave, onApply, catColor, highlight }: Opp
 
       {/* Skills */}
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-        {opp.skills.slice(0, 3).map(s => (
+        {opp.skills?.slice(0, 3).map(s => (
           <span key={s} className="tag" style={{ fontSize: 11 }}>{s}</span>
         ))}
       </div>

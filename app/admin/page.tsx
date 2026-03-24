@@ -46,13 +46,13 @@ export default function AdminPage() {
   }, [activeTab]);
 
   const handleApprove = async (o: Opportunity) => {
-    updateOpportunity(o.id, { verified: true });
+    await updateOpportunity(o.id, { verified: true });
     // Sync to Supabase
     await supabase.from('opportunities_status').upsert({ id: o.id, verified: true });
   };
 
   const handleReject = async (id: string) => {
-    deleteOpportunity(id);
+    await deleteOpportunity(id);
     // Sync to Supabase
     await supabase.from('opportunities_status').delete().eq('id', id);
   };

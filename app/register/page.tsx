@@ -24,11 +24,11 @@ export default function RegisterPage() {
   const toggleInterest = (i: string) =>
     setInterests(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError('');
-      register(name, email, password, role, orgName);
+      await register(name, email, password, role, orgName);
       if (role === 'org') router.push('/org/dashboard');
       else router.push('/dashboard');
     } catch (err: any) {

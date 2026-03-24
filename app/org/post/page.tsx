@@ -24,9 +24,9 @@ export default function OrgPostPage() {
 
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addOpportunity(form as any);
+    await addOpportunity(form as any);
     setSubmitted(true);
     setTimeout(() => router.push('/org/dashboard'), 2500);
   };

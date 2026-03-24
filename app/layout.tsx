@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { StudentProvider } from "@/lib/contexts/StudentContext";
 import { OpportunitiesProvider } from "@/lib/contexts/OpportunitiesContext";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "OpenDoor — Student Opportunity & Activity Tracker",
@@ -29,6 +30,7 @@ export default function RootLayout({
             </OpportunitiesProvider>
           </StudentProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
